@@ -120,10 +120,11 @@ def createNewModel():
     model.add(Convolution2D(48,5,5,subsample=(2,2),activation='relu'))
     model.add(Dropout(0.3))
     model.add(Convolution2D(64,3,3,activation='relu'))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(Convolution2D(64,3,3,activation='relu'))
-    model.add(Dropout(0.3))
+    #model.add(Dropout(0.3))
     model.add(Flatten())
+    model.add(Dropout(0.5))
     model.add(Dense(100))
     model.add(Dense(50))
     model.add(Dense(10))
@@ -140,11 +141,11 @@ def main():
     samples = getAllSamples(data_paths)
 
     ### Create training samples and validation samples
-    train_samples, validation_samples = train_test_split(samples, test_size=0.2)
+    train_samples, validation_samples = train_test_split(samples, test_size=0.3)
 
     ### Create training set and validation set
-    train_generator = generator(train_samples, batch_size=32)
-    validation_generator = generator(validation_samples, batch_size=32)
+    train_generator = generator(train_samples, batch_size=128)
+    validation_generator = generator(validation_samples, batch_size=128)
 
     ### Define model
     if os.path.exists(model_file_path) == True: # Load old model
