@@ -18,9 +18,11 @@ from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import MaxPooling2D
 from keras.models import load_model
 import matplotlib.pyplot as plt
+from keras import __version__ as keras_version
 
 
-data_paths = ['./data_sample/', './data1/', './data2/', './data3/']
+keras_ver = str(keras_version).encode('utf8')
+data_paths = ['./data_sample/', './data_clockwise/', './data1/', './data2/']
 model_file_path = 'model.h5'
 
 
@@ -113,16 +115,33 @@ def createNewModel():
     # Cropping
     model.add(Cropping2D(cropping=((70,25),(0,0))))
     # NVIDIA Architecture
-    model.add(Convolution2D(24,5,5,subsample=(2,2),activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Convolution2D(36,5,5,subsample=(2,2),activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Convolution2D(48,5,5,subsample=(2,2),activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Convolution2D(64,3,3,activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Convolution2D(64,3,3,activation='relu'))
-    #model.add(Dropout(0.3))
+    if (keras_ver == b'1.2.1'):
+        model.add(Convolution2D(24,5,5,subsample=(2,2),activation='relu'))
+        model.add(Dropout(0.3))
+        model.add(Convolution2D(36,5,5,subsample=(2,2),activation='relu'))
+        model.add(Dropout(0.3))
+        model.add(Convolution2D(48,5,5,subsample=(2,2),activation='relu'))
+        model.add(Dropout(0.3))
+        model.add(Convolution2D(64,3,3,activation='relu'))
+        model.add(Dropout(0.2))
+        model.add(Convolution2D(64,3,3,activation='relu'))
+        #model.add(Dropout(0.3))
+    elif (keras_ver == b'2.0.4'):
+        model.add(Convolution2D(24,(5,5),strides=2,activation='relu'),
+                    name='conv_1.1')
+        model.add(Dropout(0.3))
+        model.add(Convolution2D(36,(5,5),strides=2,activation='relu'),
+                    name='conv_1.2')
+        model.add(Dropout(0.3))
+        model.add(Convolution2D(48,(5,5),strides=2,activation='relu'),
+                    name='conv_1.3')
+        model.add(Dropout(0.3))
+        model.add(Convolution2D(64,(3,3),activation='relu'),
+                    name='conv_1.4')
+        model.add(Dropout(0.2))
+        model.add(Convolution2D(64,(3,3),activation='relu'),
+                    name='conv_1.5')
+        #model.add(Dropout(0.3))
     model.add(Flatten())
     model.add(Dropout(0.5))
     model.add(Dense(100))
@@ -136,6 +155,8 @@ def createNewModel():
 
 def main():
     model = None
+    batch_size_val = 128
+    num_epochs = 5
 
     ### Read all driving log from all folder
     samples = getAllSamples(data_paths)
@@ -144,8 +165,8 @@ def main():
     train_samples, validation_samples = train_test_split(samples, test_size=0.3)
 
     ### Create training set and validation set
-    train_generator = generator(train_samples, batch_size=128)
-    validation_generator = generator(validation_samples, batch_size=128)
+    train_generator = generator(train_samples, batch_size=batch_size_val)
+    validation_generator = generator(validation_samples, batch_size=batch_size_val)
 
     ### Define model
     if os.path.exists(model_file_path) == True: # Load old model
@@ -157,12 +178,20 @@ def main():
     model.summary()
 
     ### Train the model using the generator function
-    history_object = model.fit_generator(train_generator, \
-        samples_per_epoch=len(train_samples), \
-        validation_data=validation_generator, \
-        nb_val_samples=len(validation_samples), \
-        nb_epoch=5, \
-        verbose=1)
+    if (keras_ver == b'1.2.1'):
+        history_object = model.fit_generator(train_generator, \
+                    samples_per_epoch=len(train_samples), \
+                    validation_data=validation_generator, \
+                    nb_val_samples=len(validation_samples), \
+                    nb_epoch=num_epochs, \
+                    verbose=1)
+    elif (keras_ver == b'2.0.4'):
+        history_object = model.fit_generator(train_generator, \
+                    steps_per_epoch=int(len(train_samples)/batch_size_val), \
+                    epochs=num_epochs, \
+                    verbose=1, \
+                    validation_data=validation_generator, \
+                    validation_steps=int(len(validation_samples)/batch_size_val))
 
     ### Save model
     model.save(model_file_path)
