@@ -16,11 +16,16 @@ from keras.models import load_model
 import h5py
 from keras import __version__ as keras_version
 
+import cv2
+
 sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
-
+print_image = True # Just print 1 image for documenting
+IMG_COLS = 200
+IMG_ROWS = 66
+IMG_CH = 3
 
 class SimplePIController:
     def __init__(self, Kp, Ki):
@@ -44,9 +49,30 @@ class SimplePIController:
 
 
 controller = SimplePIController(0.1, 0.002)
-set_speed = 25
+set_speed = 30
 controller.set_desired(set_speed)
 
+def pre_processing(img):
+    global print_image
+
+    if print_image:
+        cv2.imwrite('report/OriginalImage.png', img)
+
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    if print_image:
+        cv2.imwrite('report/HSVImage.png', img)
+
+    height, width, channels = img.shape
+    crop_img = img[int(height/2.8):height-25, 0:width]
+    if print_image:
+        cv2.imwrite('report/CroppedImage.png', crop_img)
+
+    scale_img = cv2.resize(crop_img, (IMG_COLS, IMG_ROWS))
+    if print_image:
+        cv2.imwrite('report/ScaledImage.png', scale_img)
+        print_image = False
+
+    return scale_img
 
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -64,9 +90,11 @@ def telemetry(sid, data):
         controller.set_desired(set_speed - abs(float(steering_angle)))
 
         # predict steering angle
-        image = Image.open(BytesIO(base64.b64decode(imgString)))
-        image_array = np.asarray(image)
-        steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
+        pil_image = Image.open(BytesIO(base64.b64decode(imgString)))
+        #image_array = np.asarray(image)
+        #steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
+        image = pre_processing(np.array(pil_image))
+        steering_angle = float(model.predict(image[None, :, :, :], batch_size=1))
 
         throttle = controller.update(float(speed))
 
@@ -77,7 +105,7 @@ def telemetry(sid, data):
         if args.image_folder != '':
             timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
             image_filename = os.path.join(args.image_folder, timestamp)
-            image.save('{}.jpg'.format(image_filename))
+            pil_image.save('{}.jpg'.format(image_filename))
     else:
         # NOTE: DON'T EDIT THIS.
         sio.emit('manual', data={}, skip_sid=True)
