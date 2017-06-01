@@ -43,6 +43,7 @@ The goals / steps of this project are the following:
 [image28]: ./report/HSVImage.png "HSV Image"
 [image29]: ./report/CroppedImage.png "Cropped Image"
 [image30]: ./report/ScaledImage.png "Scaled Image"
+[image31]: ./report/model_mean_squared_error_loss.png "Model Mean Squared Error Loss"
 
 ## Rubric Points
 ###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.
@@ -258,6 +259,8 @@ I finally randomly shuffled the data set and put 30% of the data into a validati
 ####3.8 Training Process
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was 5 and batch size was 132 (=22\*(3\*2)). I used an adam optimizer so that manually training the learning rate wasn't necessary.
+
+![alt text][image31]
 
 ## Note
 I have just used NVIDIA's architecture model and a little bit data agumentation techniques for this project. I think it is enough at this time for track 1. When I have free time, I will try with track 2 and I also will try another architecture (LeNet, VGG, GoogLeNet, etc) for better performance (training time, accuracy).
